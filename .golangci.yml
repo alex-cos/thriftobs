@@ -1,0 +1,276 @@
+version: "2"
+run:
+  issues-exit-code: 1
+  tests: true
+  allow-parallel-runners: true
+linters:
+  default: standard
+  enable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
+    - copyloopvar
+    - cyclop
+    - dogsled
+    - dupl
+    - durationcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gocheckcompilerdirectives
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goprintffuncname
+    - gosec
+    - iface
+    - importas
+    - intrange
+    - lll
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nonamedreturns
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - protogetter
+    - reassign
+    - rowserrcheck
+    - sloglint
+    - sqlclosecheck
+    - staticcheck
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+    - zerologlint
+  # Disable specific linter.
+  disable:
+    - mnd
+  # All available settings of specific linters.
+  settings:
+    copyloopvar:
+      check-alias: false
+    cyclop:
+      max-complexity: 25
+      package-average: 10
+    dogsled:
+      max-blank-identifiers: 2
+    dupl:
+      threshold: 200
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      disable-default-exclusions: false
+    exhaustive:
+      default-signifies-exhaustive: true
+    fatcontext:
+      check-struct-pointers: false
+    funlen:
+      lines: 120
+      statements: 100
+      ignore-comments: true
+    gocognit:
+      min-complexity: 30
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    gocritic:
+      disabled-checks:
+        - importShadow
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - opinionated
+      disabled-tags:
+        - experimental
+    gocyclo:
+      min-complexity: 25
+    iface:
+      enable:
+        - identical
+        - unused
+    lll:
+      line-length: 120
+      tab-width: 1
+    nestif:
+      min-complexity: 7
+    paralleltest:
+      ignore-missing: false
+      ignore-missing-subtests: true
+    testifylint:
+      disable:
+        - require-error
+        - float-compare
+    testpackage:
+      skip-regexp: .*(export|internal)_test\.go
+      allow-packages:
+        - main
+  # Defines a set of rules to ignore issues.
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    # Excluding configuration per-path, per-linter, per-text and per-source.
+    rules:
+      - linters:
+          - dogsled
+          - dupl
+          - forbidigo
+          - forcetypeassert
+          - funlen
+          - gochecknoglobals
+          - gocognit
+          - goconst
+          - gosec
+          - misspell
+          - mnd
+          - noctx
+          - perfsprint
+        path: (.+)_test\.go$
+      - linters:
+          - gochecknoglobals
+        path: main\.go$
+      - linters:
+          - gochecknoglobals
+        path: (.*)cli\.go$
+      - linters:
+          - gochecknoglobals
+        path: (.*)singleton\.go$
+      - linters:
+          - dupl
+          - forcetypeassert
+          - gocognit
+          - gosec
+          - mnd
+        path: (.*)mock\.go$
+      - linters:
+          - gocritic
+        text: "unnecessaryDefer:"
+      - path: (.+)\.go$
+        text: G306
+      - linters:
+          - cyclop
+        path: (.+)_test\.go$
+    paths:
+      - vendor
+      - tmp
+issues:
+  max-issues-per-linter: 500
+  max-same-issues: 0
+  uniq-by-line: true
+severity:
+  default: error
+  rules:
+    - linters:
+        - containedctx
+        - contextcheck
+        - copyloopvar
+        - cyclop
+        - forbidigo
+        - gocritic
+        - gosec
+        - importas
+        - mirror
+        - nakedret
+        - noctx
+        - rowserrcheck
+        - sqlclosecheck
+        - zerologlint
+      severity: error
+    - linters:
+        - bidichk
+        - bodyclose
+        - errcheck
+        - errchkjson
+        - fatcontext
+        - funlen
+        - gocheckcompilerdirectives
+        - gocognit
+        - gocyclo
+        - ineffassign
+        - nestif
+        - paralleltest
+        - reassign
+        - sloglint
+        - tparallel
+      severity: warning
+    - linters:
+        - asasalint
+        - asciicheck
+        - canonicalheader
+        - dogsled
+        - dupl
+        - durationcheck
+        - errname
+        - errorlint
+        - exhaustive
+        - exptostd
+        - forbidigo
+        - forcetypeassert
+        - gochecknoinits
+        - goconst
+        - godot
+        - godox
+        - goprintffuncname
+        - iface
+        - ifshort
+        - intrange
+        - lll
+        - loggercheck
+        - makezero
+        - misspell
+        - musttag
+        - nilerr
+        - nilnesserr
+        - nilnil
+        - nonamedreturns
+        - perfsprint
+        - prealloc
+        - predeclared
+        - protogetter
+        - staticcheck
+        - testifylint
+        - testpackage
+        - thelper
+        - unconvert
+        - unparam
+        - wastedassign
+        - whitespace
+        - wrapcheck
+      severity: info
+
+formatters:
+  enable: []

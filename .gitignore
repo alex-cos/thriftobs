@@ -1,0 +1,21 @@
+# Ignore the followings directories or files:
+
+build
+vendor
+tmp
+
+**/bin
+
+**/Thumbs.db
+
+# Editor directories and files
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# ignore sonar scanner files
+**/.scannerwork
+
