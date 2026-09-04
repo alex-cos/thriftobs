@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/alex-cos/thriftobs"
@@ -58,20 +59,33 @@ func main() {
 		}
 	}()
 
+	process(client)
+}
+
+func process(client *example.ExempleClient) {
+	var input string
+
 	for {
-		var input string
-		_, err := fmt.Scanln(&input)
+		n, err := fmt.Scanln(&input)
 		if err != nil {
+			if strings.Contains(err.Error(), "unexpected newline") {
+				continue
+			}
 			panic(err)
 		}
-
+		if n == 0 {
+			continue
+		}
+		if input == "exit" || input == "quit" {
+			return
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		output, err := client.Echo(ctx, input)
 		if err != nil {
-			panic(err)
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 		cancel()
 
-		fmt.Fprintf(os.Stdout, "output = %s\n", output)
+		fmt.Fprintln(os.Stdout, output)
 	}
 }
