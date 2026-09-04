@@ -9,6 +9,8 @@
 
 Prometheus observability wrapper for [Apache Thrift](https://thrift.apache.org/) in Go. Automatically instruments Thrift servers with per-method metrics (requests, errors, latency, bytes) via decorator implementations of `TProcessor`, `TProtocol`, and `TTransport`.
 
+![thriftobs](/thriftobs.png)
+
 ## Features
 
 - **Zero-code instrumentation** — wrap your existing `TProcessor` without changing business logic.
