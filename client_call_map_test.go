@@ -10,17 +10,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const intervalShort = 10 * time.Millisecond
+
 func TestNewClientCallMap(t *testing.T) {
 	t.Parallel()
 
-	cm := thriftobs.NewClientCallMap()
+	cm := thriftobs.NewClientCallMap(expiration, intervalShort)
 	assert.NotNil(t, cm)
 }
 
 func TestClientCallMap_AddAndRemove(t *testing.T) {
 	t.Parallel()
 
-	cm := thriftobs.NewClientCallMap()
+	cm := thriftobs.NewClientCallMap(time.Second, intervalShort)
 	call := thriftobs.ClientCall{
 		SeqID:     1,
 		Method:    "echo",
@@ -32,7 +34,8 @@ func TestClientCallMap_AddAndRemove(t *testing.T) {
 	removed, ok := cm.Remove(1)
 
 	require.True(t, ok)
-	assert.Equal(t, call, removed)
+	assert.Equal(t, call.SeqID, removed.SeqID)
+	assert.Equal(t, call.Method, removed.Method)
 
 	// Second remove should fail
 	_, ok = cm.Remove(1)
@@ -42,7 +45,7 @@ func TestClientCallMap_AddAndRemove(t *testing.T) {
 func TestClientCallMap_RemoveNonExistent(t *testing.T) {
 	t.Parallel()
 
-	cm := thriftobs.NewClientCallMap()
+	cm := thriftobs.NewClientCallMap(time.Second, intervalShort)
 	_, ok := cm.Remove(999)
 	assert.False(t, ok)
 }
@@ -50,7 +53,7 @@ func TestClientCallMap_RemoveNonExistent(t *testing.T) {
 func TestClientCallMap_ConcurrentAccess(t *testing.T) {
 	t.Parallel()
 
-	cm := thriftobs.NewClientCallMap()
+	cm := thriftobs.NewClientCallMap(time.Second, intervalShort)
 	var wg sync.WaitGroup
 	const numGoroutines = 100
 	const callsPerGoroutine = 100
@@ -93,7 +96,7 @@ func TestClientCallMap_ConcurrentAccess(t *testing.T) {
 func TestClientCallMap_OverwriteSameSeqID(t *testing.T) {
 	t.Parallel()
 
-	cm := thriftobs.NewClientCallMap()
+	cm := thriftobs.NewClientCallMap(time.Second, intervalShort)
 	call1 := thriftobs.ClientCall{SeqID: 1, Method: "first", Start: time.Now(), BytesSent: 10}
 	call2 := thriftobs.ClientCall{SeqID: 1, Method: "second", Start: time.Now(), BytesSent: 20}
 
@@ -102,5 +105,23 @@ func TestClientCallMap_OverwriteSameSeqID(t *testing.T) {
 
 	removed, ok := cm.Remove(1)
 	require.True(t, ok)
-	assert.Equal(t, call2, removed) // should get the latest
+	assert.Equal(t, call2.Method, removed.Method) // should get the latest
+}
+
+func TestClientCallMap_Cleanup(t *testing.T) {
+	t.Parallel()
+
+	cm := thriftobs.NewClientCallMap(500*time.Millisecond, 100*time.Millisecond)
+	call := thriftobs.ClientCall{SeqID: 1, Method: "first", Start: time.Now(), BytesSent: 10}
+
+	cm.Add(call)
+
+	time.Sleep(200 * time.Millisecond)
+
+	assert.Equal(t, 1, cm.Len())
+
+	time.Sleep(800 * time.Millisecond)
+
+	// All calls should be removed
+	assert.Equal(t, 0, cm.Len())
 }

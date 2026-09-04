@@ -37,4 +37,5 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.out
+          gcov_ignore: ./example
           fail_ci_if_error: false

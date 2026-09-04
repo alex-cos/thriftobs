@@ -173,7 +173,7 @@ func NewClientProtocolFactory(f thrift.TProtocolFactory, metrics *Metrics) thrif
 	return &ClientProtocolFactory{
 		TProtocolFactory: f,
 		metrics:          metrics,
-		calls:            NewClientCallMap(),
+		calls:            NewClientCallMap(15*time.Minute, 20*time.Minute),
 	}
 }
 

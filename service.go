@@ -51,30 +51,51 @@ func NewService(
 }
 
 func (s *Service) GetProtocol() ProtocolType {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.protocol
 }
 
 func (s *Service) GetSocketTimeout() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.socketTimeout
 }
 
 func (s *Service) GetConnectTimeout() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.connectTimeout
 }
 
 func (s *Service) GetProtocolFactory() thrift.TProtocolFactory {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.protocolFactory
 }
 
 func (s *Service) GetCfg() *tls.Config {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.cfg
 }
 
 func (s *Service) GetCertFile() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.certFile
 }
 
 func (s *Service) GetKeyFile() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	return s.keyFile
 }
 

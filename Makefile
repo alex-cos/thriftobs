@@ -47,14 +47,16 @@ build: $(VENDOR) $(SERVICES)
 
 .PHONY: test
 test: $(VENDOR) $(SERVICES)
-	$(GO) test ./...
+	$(GO) test \
+		-timeout $(TEST_TIMEOUT) \
+		$(MAINMODULE)
 
 .PHONY: test-short
 test-short: $(VENDOR)
 	$(GO) test \
 		-short \
 		-timeout $(TEST_TIMEOUT) \
-		./...
+		$(MAINMODULE)
 
 .PHONY: test-cover
 test-cover: $(VENDOR)
@@ -64,12 +66,10 @@ test-cover: $(VENDOR)
 		-coverprofile tmp/coverage/coverage.out \
 		-covermode=count \
 		-json \
-		./... 1>tmp/coverage/report.json \
-		|| true
+		$(MAINMODULE) 1>tmp/coverage/report.json
 	$(GO) tool cover \
 		-html tmp/coverage/coverage.out \
-		-o tmp/coverage/coverage.html \
-		|| true
+		-o tmp/coverage/coverage.html
 
 .PHONY: lint
 lint: $(VENDOR) $(SERVICES)

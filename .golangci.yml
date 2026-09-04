@@ -146,6 +146,7 @@ linters:
     # Excluding configuration per-path, per-linter, per-text and per-source.
     rules:
       - linters:
+          - cyclop
           - dogsled
           - dupl
           - forbidigo
@@ -155,7 +156,6 @@ linters:
           - gocognit
           - goconst
           - gosec
-          - misspell
           - mnd
           - noctx
           - perfsprint
@@ -164,26 +164,10 @@ linters:
           - gochecknoglobals
         path: main\.go$
       - linters:
-          - gochecknoglobals
-        path: (.*)cli\.go$
-      - linters:
-          - gochecknoglobals
-        path: (.*)singleton\.go$
-      - linters:
-          - dupl
-          - forcetypeassert
-          - gocognit
-          - gosec
-          - mnd
-        path: (.*)mock\.go$
-      - linters:
           - gocritic
         text: "unnecessaryDefer:"
       - path: (.+)\.go$
         text: G306
-      - linters:
-          - cyclop
-        path: (.+)_test\.go$
     paths:
       - vendor
       - tmp

@@ -11,6 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const expiration = 10 * time.Second
+const interval = 10 * time.Second
+
 type cliMockProtocol struct {
 	thrift.TProtocol
 	transport   *thriftobs.MetricsTransport
@@ -100,7 +103,7 @@ func TestNewClientProtocol(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	underlying := &cliMockProtocol{}
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
@@ -113,7 +116,7 @@ func TestClientProtocol_WriteMessageBegin_Call(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{transport: transport}
 
@@ -138,7 +141,7 @@ func TestClientProtocol_WriteMessageBegin_OneWay(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{transport: transport}
 
@@ -156,7 +159,7 @@ func TestClientProtocol_WriteMessageBegin_Reply_NotRecorded(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{transport: transport}
 
@@ -173,7 +176,7 @@ func TestClientProtocol_WriteMessageBegin_Exception_NotRecorded(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{transport: transport}
 
@@ -190,7 +193,7 @@ func TestClientProtocol_ReadMessageBegin_Reply(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{
 		transport:  transport,
@@ -221,7 +224,7 @@ func TestClientProtocol_ReadMessageBegin_Exception(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{
 		transport:  transport,
@@ -251,7 +254,7 @@ func TestClientProtocol_ReadMessageBegin_Call_NoMatch(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{
 		transport:  transport,
@@ -272,7 +275,7 @@ func TestClientProtocol_ReadMessageBegin_Error(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{
 		transport: transport,
@@ -290,7 +293,7 @@ func TestClientProtocol_ReadMessageBegin_NoMatchingCall(t *testing.T) {
 	t.Parallel()
 
 	metrics := thriftobs.GetMetrics()
-	calls := thriftobs.NewClientCallMap()
+	calls := thriftobs.NewClientCallMap(expiration, interval)
 	transport := thriftobs.NewMetricsTransport(&cliMockTransport{})
 	underlying := &cliMockProtocol{
 		transport:  transport,
