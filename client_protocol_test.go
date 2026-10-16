@@ -16,6 +16,7 @@ const interval = 10 * time.Second
 
 type cliMockProtocol struct {
 	thrift.TProtocol
+
 	transport   *thriftobs.MetricsTransport
 	readMethod  string
 	readType    thrift.TMessageType
@@ -63,6 +64,7 @@ func (m *cliMockProtocol) Flush(ctx context.Context) error {
 
 type cliMockProtocolFactory struct {
 	thrift.TProtocolFactory
+
 	createdProtocol *cliMockProtocol
 }
 
@@ -77,6 +79,7 @@ func (f *cliMockProtocolFactory) GetProtocol(trans thrift.TTransport) thrift.TPr
 
 type cliMockTransport struct {
 	thrift.TTransport
+
 	closed bool
 }
 
@@ -122,7 +125,7 @@ func TestClientProtocol_WriteMessageBegin_Call(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	err := cp.WriteMessageBegin(context.Background(), "echo", thrift.CALL, 1)
+	err := cp.WriteMessageBegin(t.Context(), "echo", thrift.CALL, 1)
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", underlying.writeMethod)
@@ -147,7 +150,7 @@ func TestClientProtocol_WriteMessageBegin_OneWay(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	err := cp.WriteMessageBegin(context.Background(), "oneway", thrift.ONEWAY, 2)
+	err := cp.WriteMessageBegin(t.Context(), "oneway", thrift.ONEWAY, 2)
 
 	require.NoError(t, err)
 	call, ok := calls.Remove(2)
@@ -165,7 +168,7 @@ func TestClientProtocol_WriteMessageBegin_Reply_NotRecorded(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	err := cp.WriteMessageBegin(context.Background(), "echo", thrift.REPLY, 3)
+	err := cp.WriteMessageBegin(t.Context(), "echo", thrift.REPLY, 3)
 
 	require.NoError(t, err)
 	_, ok := calls.Remove(3)
@@ -182,7 +185,7 @@ func TestClientProtocol_WriteMessageBegin_Exception_NotRecorded(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	err := cp.WriteMessageBegin(context.Background(), "echo", thrift.EXCEPTION, 4)
+	err := cp.WriteMessageBegin(t.Context(), "echo", thrift.EXCEPTION, 4)
 
 	require.NoError(t, err)
 	_, ok := calls.Remove(4)
@@ -212,7 +215,7 @@ func TestClientProtocol_ReadMessageBegin_Reply(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	method, msgType, seqID, err := cp.ReadMessageBegin(context.Background())
+	method, msgType, seqID, err := cp.ReadMessageBegin(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", method)
@@ -242,7 +245,7 @@ func TestClientProtocol_ReadMessageBegin_Exception(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	method, msgType, seqID, err := cp.ReadMessageBegin(context.Background())
+	method, msgType, seqID, err := cp.ReadMessageBegin(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", method)
@@ -265,7 +268,7 @@ func TestClientProtocol_ReadMessageBegin_Call_NoMatch(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	method, _, _, err := cp.ReadMessageBegin(context.Background())
+	method, _, _, err := cp.ReadMessageBegin(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", method)
@@ -284,7 +287,7 @@ func TestClientProtocol_ReadMessageBegin_Error(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	_, _, _, err := cp.ReadMessageBegin(context.Background())
+	_, _, _, err := cp.ReadMessageBegin(t.Context())
 
 	assert.Error(t, err)
 }
@@ -304,7 +307,7 @@ func TestClientProtocol_ReadMessageBegin_NoMatchingCall(t *testing.T) {
 
 	cp := thriftobs.NewClientProtocol(underlying, calls, metrics)
 
-	method, _, _, err := cp.ReadMessageBegin(context.Background())
+	method, _, _, err := cp.ReadMessageBegin(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", method)

@@ -49,7 +49,7 @@ func BuildClientProtocolFactory(
 	conf *thrift.TConfiguration,
 	metrics *Metrics,
 ) (thrift.TProtocolFactory, error) {
-	protocolFactory, err := BuildProtocolFactory(pt, nil)
+	protocolFactory, err := BuildProtocolFactory(pt, conf)
 	if err != nil {
 		return nil, err
 	}

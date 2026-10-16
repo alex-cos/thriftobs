@@ -13,6 +13,7 @@ import (
 
 type svcMockProcessor struct {
 	thrift.TProcessor
+
 	processCalled bool
 }
 

@@ -9,6 +9,7 @@ import (
 
 type MetricsProcessor struct {
 	thrift.TProcessor
+
 	metrics *Metrics
 }
 

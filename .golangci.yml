@@ -15,9 +15,11 @@ linters:
     - contextcheck
     - copyloopvar
     - cyclop
+    - decorder
     - dogsled
     - dupl
     - durationcheck
+    - embeddedstructfieldcheck
     - errchkjson
     - errname
     - errorlint
@@ -30,13 +32,13 @@ linters:
     - gocheckcompilerdirectives
     - gochecknoinits
     - gocognit
-    - goconst
     - gocritic
     - gocyclo
     - godot
     - godox
     - goprintffuncname
     - gosec
+    - govet
     - iface
     - importas
     - intrange
@@ -53,10 +55,12 @@ linters:
     - nilnil
     - noctx
     - nonamedreturns
+    - nosprintfhostport
     - paralleltest
     - perfsprint
     - prealloc
     - predeclared
+    - promlinter
     - protogetter
     - reassign
     - rowserrcheck
@@ -69,6 +73,8 @@ linters:
     - tparallel
     - unconvert
     - unparam
+    - unused
+    - usetesting
     - wastedassign
     - whitespace
     - zerologlint
@@ -100,9 +106,6 @@ linters:
       ignore-comments: true
     gocognit:
       min-complexity: 30
-    goconst:
-      min-len: 3
-      min-occurrences: 3
     gocritic:
       disabled-checks:
         - importShadow
@@ -128,6 +131,7 @@ linters:
       ignore-missing: false
       ignore-missing-subtests: true
     testifylint:
+      enable-all: true
       disable:
         - require-error
         - float-compare
@@ -135,6 +139,10 @@ linters:
       skip-regexp: .*(export|internal)_test\.go
       allow-packages:
         - main
+    usetesting:
+      context-background: true
+      context-todo: true
+      os-temp-dir: true
   # Defines a set of rules to ignore issues.
   exclusions:
     generated: lax
@@ -149,6 +157,7 @@ linters:
           - cyclop
           - dogsled
           - dupl
+          - errcheck
           - forbidigo
           - forcetypeassert
           - funlen
@@ -159,6 +168,7 @@ linters:
           - mnd
           - noctx
           - perfsprint
+          - prealloc
         path: (.+)_test\.go$
       - linters:
           - gochecknoglobals

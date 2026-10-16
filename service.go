@@ -10,6 +10,18 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 )
 
+// SetServerStopTimeout sets the maximum time a Thrift server waits, when
+// stopped, for active client connections to close gracefully before they are
+// forced to close.
+//
+// Thrift defines this setting as a process-wide variable
+// (thrift.ServerStopTimeout). Calling this function therefore affects every
+// Thrift server in the process, not only thriftobs services. A value <= 0
+// disables the timeout, meaning the server waits indefinitely.
+func SetServerStopTimeout(d time.Duration) {
+	thrift.ServerStopTimeout = d
+}
+
 type Service struct {
 	protocol        ProtocolType
 	processor       thrift.TProcessor

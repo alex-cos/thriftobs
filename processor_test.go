@@ -11,6 +11,7 @@ import (
 
 type procMockProtocol struct {
 	thrift.TProtocol
+
 	transport *thriftobs.MetricsTransport
 	readErr   error
 	writeErr  error
@@ -54,6 +55,7 @@ func (m *procMockProtocol) Flush(ctx context.Context) error {
 
 type procMockProcessor struct {
 	thrift.TProcessor
+
 	processFunc func(ctx context.Context, in, out thrift.TProtocol) (bool, thrift.TException)
 }
 
@@ -68,6 +70,7 @@ func (m *procMockProcessor) Process(ctx context.Context, in, out thrift.TProtoco
 
 type procMockTransport struct {
 	thrift.TTransport
+
 	readData  []byte
 	writeData []byte
 	readErr   error
@@ -125,7 +128,7 @@ func TestMetricsProcessor_Process_Success(t *testing.T) {
 	underlying := &procMockProcessor{}
 	mp := thriftobs.NewMetricsProcessor(underlying, metrics)
 
-	ok, err := mp.Process(context.Background(), inProto, outProto)
+	ok, err := mp.Process(t.Context(), inProto, outProto)
 
 	assert.True(t, ok)
 	assert.NoError(t, err)
@@ -145,7 +148,7 @@ func TestMetricsProcessor_Process_RecordsMetrics(t *testing.T) {
 	underlying := &procMockProcessor{}
 	mp := thriftobs.NewMetricsProcessor(underlying, metrics)
 
-	ok, err := mp.Process(context.Background(), inProto, outProto)
+	ok, err := mp.Process(t.Context(), inProto, outProto)
 
 	assert.True(t, ok)
 	assert.NoError(t, err)
@@ -172,7 +175,7 @@ func TestMetricsProcessor_Process_Error(t *testing.T) {
 	}
 	mp := thriftobs.NewMetricsProcessor(underlying, metrics)
 
-	ok, err := mp.Process(context.Background(), inProto, outProto)
+	ok, err := mp.Process(t.Context(), inProto, outProto)
 
 	assert.False(t, ok)
 	assert.Error(t, err)
@@ -190,7 +193,7 @@ func TestMetricsProcessor_Process_NoMethod(t *testing.T) {
 	underlying := &procMockProcessor{}
 	mp := thriftobs.NewMetricsProcessor(underlying, metrics)
 
-	ok, err := mp.Process(context.Background(), inProto, outProto)
+	ok, err := mp.Process(t.Context(), inProto, outProto)
 
 	assert.True(t, ok)
 	assert.NoError(t, err)
@@ -206,7 +209,7 @@ func TestMetricsProcessor_Process_NilTransport(t *testing.T) {
 	underlying := &procMockProcessor{}
 	mp := thriftobs.NewMetricsProcessor(underlying, metrics)
 
-	ok, err := mp.Process(context.Background(), inProto, outProto)
+	ok, err := mp.Process(t.Context(), inProto, outProto)
 
 	assert.True(t, ok)
 	assert.NoError(t, err)

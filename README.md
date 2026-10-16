@@ -22,6 +22,7 @@ Prometheus observability wrapper for [Apache Thrift](https://thrift.apache.org/)
 - **Multiple protocols** — `binary` (default), `compact`, `json`, `simplejson`.
 - **Client helper** — instrumented transport factory for Thrift clients.
 - **Simple server lifecycle** — `Service` wraps `TSimpleServer` with `Start`/`Stop`/`IsRunning`.
+- **Client connection pool** — generic `Pool[T]` for Thrift clients: on-demand creation, health checks, idle/lifetime recycling, retries and Prometheus gauges.
 
 ## Installation
 
@@ -135,6 +136,98 @@ func main() {
 }
 ```
 
+## Client Connection Pool
+
+`Pool[T]` is a generic connection pool for Thrift clients. Connections are created on demand, kept at `minConnections` by periodic health checks, and recycled when idle or too old. A runnable example lives in `example/pool`.
+
+```go
+package main
+
+import (
+  "context"
+  "time"
+
+  "github.com/alex-cos/thriftobs"
+  "github.com/alex-cos/thriftobs/example/gen/example"
+)
+
+func main() {
+  metrics := thriftobs.GetMetrics()
+  poolMetrics := thriftobs.GetPoolMetrics()
+
+  protocolFactory, err := thriftobs.BuildClientProtocolFactory(thriftobs.Binary, nil, metrics)
+  if err != nil {
+    panic(err)
+  }
+
+  pool, err := thriftobs.NewPool(
+    nil, // nil uses slog.Default()
+    thriftobs.ThriftClientFactory(
+      example.NewExempleClientFactory,
+      protocolFactory,
+      "localhost",
+      9000,
+      5*time.Second,  // connect timeout
+      30*time.Second, // socket timeout
+    ),
+    thriftobs.WithPoolMinConnections(2),
+    thriftobs.WithPoolMaxConnections(10),
+    thriftobs.WithPoolMaxRetries(1),
+    thriftobs.WithPoolMaxIdleTime(5*time.Minute),
+    thriftobs.WithPoolMaxLifetime(time.Hour),
+    thriftobs.WithPoolHealthCheck(time.Minute),
+    thriftobs.WithPoolConnectTimeout(10*time.Second),
+  )
+  if err != nil {
+    panic(err)
+  }
+  defer pool.Close()
+
+  pool.SetMetrics(poolMetrics)
+
+  err = pool.Do(context.Background(), func(client *example.ExempleClient) error {
+    _, err := client.Echo(context.Background(), "hello")
+
+    return err
+  })
+  if err != nil {
+    panic(err)
+  }
+}
+```
+
+`Do` checks out a connection from the pool, runs `fn` and releases the connection. If `fn` returns a transport or protocol error, the connection is invalidated and the operation is retried up to `WithPoolMaxRetries` times (`0` disables retries). Application exceptions returned by the server (`thrift.TApplicationException` or generated exception types) are returned immediately and leave the connection usable. The returned error wraps the last failure. `Close` closes every transport and waits for in-flight operations to complete.
+
+Custom clients can be pooled by providing your own `PoolFactory[T]` instead of `ThriftClientFactory`.
+
+### Pool Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `WithPoolMinConnections` | `2` | Connections created at startup (best effort) and maintained by health checks. |
+| `WithPoolMaxConnections` | `10` | Maximum number of connections. |
+| `WithPoolMaxRetries` | `1` | Retries per `Do` after the first attempt. `0` disables retries. |
+| `WithPoolMaxIdleTime` | `5m` | Idle connections beyond this duration are closed. |
+| `WithPoolMaxLifetime` | `1h` | Maximum connection age, after which the connection is recycled. |
+| `WithPoolHealthCheck` | `1m` | Health check interval. |
+| `WithPoolConnectTimeout` | `10s` | Timeout used when creating connections (startup, health check, on demand). |
+
+### Pool Metrics
+
+Pool metrics are optional gauges supplied by the caller:
+
+```go
+pool.SetMetrics(&thriftobs.PoolMetrics{
+  Total:   totalGauge,   // pooled connections
+  InUse:   inUseGauge,   // connections currently checked out
+  Idle:    idleGauge,    // available connections
+  Invalid: invalidGauge, // invalid connections awaiting removal
+  Open:    openGauge,    // connections with an open transport
+})
+```
+
+Gauges are refreshed on connection creation, checkout and release, on health checks and on `Close`.
+
 ## Metrics Exposed
 
 All metrics are `*prometheus.CounterVec` or `*prometheus.HistogramVec` with a single label `method`.
@@ -196,7 +289,13 @@ svc := thriftobs.NewService(
 )
 ```
 
-### TLS / SSL
+### Server Stop Timeout
+
+Thrift bounds how long a stopped server waits for active client connections via the process-wide `thrift.ServerStopTimeout` setting. Configure it before starting your servers (`<= 0` waits indefinitely, which is the Thrift default):
+
+```go
+thriftobs.SetServerStopTimeout(5 * time.Second)
+```
 
 ## Protocol Configuration
 
@@ -244,6 +343,10 @@ hello
 
 # Terminal 4: check client metrics
 curl http://localhost:8002/metrics | grep thrift_
+
+# Alternative: pool-based client (same Prometheus :8002, run instead of client)
+./example/bin/pool
+hello
 ```
 
 ## Development

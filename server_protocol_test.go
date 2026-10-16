@@ -12,6 +12,7 @@ import (
 
 type srvMockProtocol struct {
 	thrift.TProtocol
+
 	readMethod string
 	readType   thrift.TMessageType
 	readSeqID  int32
@@ -51,6 +52,7 @@ func (m *srvMockProtocol) Transport() thrift.TTransport {
 
 type srvMockProtocolFactory struct {
 	thrift.TProtocolFactory
+
 	createdProtocol thrift.TProtocol
 }
 
@@ -62,6 +64,7 @@ func (f *srvMockProtocolFactory) GetProtocol(trans thrift.TTransport) thrift.TPr
 
 type srvMockTransport struct {
 	thrift.TTransport
+
 	closed bool
 }
 
@@ -105,7 +108,7 @@ func TestServerProtocol_ReadMessageBegin_Success(t *testing.T) {
 	}
 	sp := thriftobs.NewServerProtocol(underlying)
 
-	method, msgType, seqID, err := sp.ReadMessageBegin(context.Background())
+	method, msgType, seqID, err := sp.ReadMessageBegin(t.Context())
 
 	require.NoError(t, err)
 	assert.Equal(t, "echo", method)
@@ -122,7 +125,7 @@ func TestServerProtocol_ReadMessageBegin_Error(t *testing.T) {
 	}
 	sp := thriftobs.NewServerProtocol(underlying)
 
-	method, msgType, seqID, err := sp.ReadMessageBegin(context.Background())
+	method, msgType, seqID, err := sp.ReadMessageBegin(t.Context())
 
 	assert.Error(t, err)
 	assert.Empty(t, method)
@@ -140,7 +143,7 @@ func TestServerProtocol_GetMethod_ThreadSafe(t *testing.T) {
 	sp := thriftobs.NewServerProtocol(underlying)
 
 	// Read to set method
-	_, _, _, _ = sp.ReadMessageBegin(context.Background())
+	_, _, _, _ = sp.ReadMessageBegin(t.Context())
 
 	// Concurrent reads should be safe
 	done := make(chan struct{})
@@ -161,7 +164,7 @@ func TestServerProtocol_GetMethod_ThreadSafe(t *testing.T) {
 	for range 100 {
 		go func() {
 			underlying.readMethod = "concurrent"
-			_, _, _, _ = sp.ReadMessageBegin(context.Background())
+			_, _, _, _ = sp.ReadMessageBegin(t.Context())
 		}()
 	}
 

@@ -48,6 +48,7 @@ func main() {
 		}
 	}()
 
+	thriftobs.SetServerStopTimeout(5 * time.Second)
 	err := svc.Start("", 9000)
 	if err != nil {
 		panic(err)

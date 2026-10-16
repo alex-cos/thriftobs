@@ -11,6 +11,7 @@ import (
 
 type transMockTransport struct {
 	thrift.TTransport
+
 	readData  []byte
 	writeData []byte
 	readErr   error

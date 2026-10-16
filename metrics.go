@@ -52,6 +52,41 @@ func GetMetrics() *Metrics {
 	}
 }
 
+func GetPoolMetrics() *PoolMetrics {
+	return &PoolMetrics{
+		Total: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "thrift_pool_connections",
+				Help: "Total number of Thrift Pool connections.",
+			},
+		),
+		InUse: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "thrift_pool_in_use_connections",
+				Help: "Number of used Thrift Pool connections.",
+			},
+		),
+		Idle: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "thrift_pool_idle_connections",
+				Help: "Number of idle Thrift Pool connections.",
+			},
+		),
+		Invalid: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "thrift_pool_invalid_connections",
+				Help: "Number of invalid Thrift Pool connections.",
+			},
+		),
+		Open: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "thrift_pool_open_connections",
+				Help: "Number of opened Thrift Pool connections.",
+			},
+		),
+	}
+}
+
 func NewThriftCollectors(m *Metrics) []prometheus.Collector {
 	return []prometheus.Collector{
 		m.Requests,
@@ -59,5 +94,15 @@ func NewThriftCollectors(m *Metrics) []prometheus.Collector {
 		m.Duration,
 		m.BytesReceived,
 		m.BytesSent,
+	}
+}
+
+func NewThriftPoolCollectors(m *PoolMetrics) []prometheus.Collector {
+	return []prometheus.Collector{
+		m.Total,
+		m.InUse,
+		m.Idle,
+		m.Invalid,
+		m.Open,
 	}
 }

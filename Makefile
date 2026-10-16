@@ -44,6 +44,10 @@ build: $(VENDOR) $(SERVICES)
 		-ldflags '$(LDFLAGS)' \
 		-o "$(TARGET_DIR)/server$(BINARY_EXT)" \
 		"./example/server";
+	$(GO) build \
+		-ldflags '$(LDFLAGS)' \
+		-o "$(TARGET_DIR)/pool$(BINARY_EXT)" \
+		"./example/pool";
 
 .PHONY: test
 test: $(VENDOR) $(SERVICES)
