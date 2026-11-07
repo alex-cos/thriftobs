@@ -84,6 +84,18 @@ func GetPoolMetrics() *PoolMetrics {
 				Help: "Number of opened Thrift Pool connections.",
 			},
 		),
+		Acquisitions: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "thrift_pool_acquisitions_total",
+				Help: "Total number of Thrift Pool connection acquisitions.",
+			},
+		),
+		BusySeconds: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "thrift_pool_busy_seconds_total",
+				Help: "Total time Thrift Pool connections spent checked out, in seconds.",
+			},
+		),
 	}
 }
 
@@ -104,5 +116,7 @@ func NewThriftPoolCollectors(m *PoolMetrics) []prometheus.Collector {
 		m.Idle,
 		m.Invalid,
 		m.Open,
+		m.Acquisitions,
+		m.BusySeconds,
 	}
 }

@@ -166,6 +166,16 @@ func gaugeValue(t *testing.T, gauge prometheus.Gauge) float64 {
 	return metric.GetGauge().GetValue()
 }
 
+func counterValue(t *testing.T, counter prometheus.Counter) float64 {
+	t.Helper()
+
+	var metric dto.Metric
+
+	require.NoError(t, counter.Write(&metric))
+
+	return metric.GetCounter().GetValue()
+}
+
 func newPoolTestGauges() *thriftobs.PoolMetrics {
 	return &thriftobs.PoolMetrics{
 		Total: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -175,6 +185,14 @@ func newPoolTestGauges() *thriftobs.PoolMetrics {
 		InUse: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "test_pool_in_use",
 			Help: "Number of connections currently in use.",
+		}),
+		Acquisitions: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "test_pool_acquisitions_total",
+			Help: "Total number of connection acquisitions.",
+		}),
+		BusySeconds: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "test_pool_busy_seconds_total",
+			Help: "Total time connections spent checked out.",
 		}),
 		Idle: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "test_pool_idle",
@@ -336,21 +354,30 @@ func TestPool_Do_Retries(t *testing.T) {
 			t.Parallel()
 
 			rec := &poolTestFactory{}
+
 			pool := newPoolTestPool(t, rec,
 				thriftobs.WithPoolMinConnections(1),
 				thriftobs.WithPoolMaxRetries(tc.retries),
 			)
+
+			metrics := newPoolTestGauges()
+
+			pool.SetMetrics(metrics)
 
 			var calls atomic.Int32
 
 			err := pool.Do(t.Context(), func(poolTestClient) error {
 				calls.Add(1)
 
+				time.Sleep(time.Millisecond)
+
 				return assert.AnError
 			})
 
 			require.ErrorIs(t, err, assert.AnError)
 			assert.Equal(t, tc.expected, calls.Load())
+			assert.Equal(t, float64(tc.expected), counterValue(t, metrics.Acquisitions))
+			assert.Positive(t, counterValue(t, metrics.BusySeconds))
 		})
 	}
 }
@@ -712,6 +739,8 @@ func TestPool_SetMetrics(t *testing.T) {
 
 	assert.Equal(t, float64(2), gaugeValue(t, metrics.Total))
 	assert.Zero(t, gaugeValue(t, metrics.InUse))
+	assert.Zero(t, counterValue(t, metrics.Acquisitions))
+	assert.Zero(t, counterValue(t, metrics.BusySeconds))
 	assert.Equal(t, float64(2), gaugeValue(t, metrics.Idle))
 	assert.Zero(t, gaugeValue(t, metrics.Invalid))
 	assert.Equal(t, float64(2), gaugeValue(t, metrics.Open))
@@ -719,11 +748,16 @@ func TestPool_SetMetrics(t *testing.T) {
 	require.NoError(t, pool.Do(t.Context(), func(poolTestClient) error {
 		require.Equal(t, float64(1), gaugeValue(t, metrics.InUse))
 		require.Equal(t, float64(1), gaugeValue(t, metrics.Idle))
+		require.Equal(t, float64(1), counterValue(t, metrics.Acquisitions))
+
+		time.Sleep(time.Millisecond)
 
 		return nil
 	}))
 
 	assert.Zero(t, gaugeValue(t, metrics.InUse))
+	assert.Equal(t, float64(1), counterValue(t, metrics.Acquisitions))
+	assert.Positive(t, counterValue(t, metrics.BusySeconds))
 	assert.Equal(t, float64(2), gaugeValue(t, metrics.Idle))
 
 	require.NoError(t, pool.Close())
@@ -731,6 +765,8 @@ func TestPool_SetMetrics(t *testing.T) {
 	assert.Zero(t, gaugeValue(t, metrics.Total))
 	assert.Zero(t, gaugeValue(t, metrics.Idle))
 	assert.Zero(t, gaugeValue(t, metrics.Open))
+	assert.Equal(t, float64(1), counterValue(t, metrics.Acquisitions))
+	assert.Positive(t, counterValue(t, metrics.BusySeconds))
 }
 
 func TestPool_SetMetrics_OnDemandCreation(t *testing.T) {
@@ -745,17 +781,24 @@ func TestPool_SetMetrics_OnDemandCreation(t *testing.T) {
 	pool.SetMetrics(metrics)
 
 	assert.Zero(t, gaugeValue(t, metrics.Total))
+	assert.Zero(t, counterValue(t, metrics.Acquisitions))
+	assert.Zero(t, counterValue(t, metrics.BusySeconds))
 
 	require.NoError(t, pool.Do(t.Context(), func(poolTestClient) error {
 		require.Equal(t, float64(1), gaugeValue(t, metrics.Total))
 		require.Equal(t, float64(1), gaugeValue(t, metrics.InUse))
 		require.Equal(t, float64(1), gaugeValue(t, metrics.Open))
+		require.Equal(t, float64(1), counterValue(t, metrics.Acquisitions))
+
+		time.Sleep(time.Millisecond)
 
 		return nil
 	}))
 
 	assert.Zero(t, gaugeValue(t, metrics.InUse))
 	assert.Equal(t, float64(1), gaugeValue(t, metrics.Idle))
+	assert.Equal(t, float64(1), counterValue(t, metrics.Acquisitions))
+	assert.Positive(t, counterValue(t, metrics.BusySeconds))
 }
 
 func TestThriftClientFactory_ContextCanceled(t *testing.T) {

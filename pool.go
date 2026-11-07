@@ -31,14 +31,16 @@ type poolMetricsSnapshot struct {
 	open    float64
 }
 
-// PoolMetrics holds the optional Prometheus gauges updated by the pool.
-// Every field may be nil; nil gauges are ignored.
+// PoolMetrics holds the optional Prometheus metrics updated by the pool.
+// Every field may be nil; nil metrics are ignored.
 type PoolMetrics struct {
-	Total   prometheus.Gauge // pooled connections
-	InUse   prometheus.Gauge // connections currently checked out
-	Idle    prometheus.Gauge // connections not in use
-	Invalid prometheus.Gauge // connections marked invalid, awaiting removal
-	Open    prometheus.Gauge // connections whose transport is open
+	Total        prometheus.Gauge   // pooled connections
+	InUse        prometheus.Gauge   // connections currently checked out
+	Idle         prometheus.Gauge   // connections not in use
+	Invalid      prometheus.Gauge   // connections marked invalid, awaiting removal
+	Open         prometheus.Gauge   // connections whose transport is open
+	Acquisitions prometheus.Counter // successful connection checkouts
+	BusySeconds  prometheus.Counter // cumulative time connections spent checked out
 }
 
 // PoolFactory creates a new client and transport.
@@ -454,6 +456,7 @@ func (p *Pool[T]) acquire(ctx context.Context) (*pooledConn[T], int, error) {
 			p.connsMu.Unlock()
 
 			p.setMetricsValues(snapshot)
+			p.recordAcquisition()
 
 			return conn, idx, nil
 		}
@@ -476,9 +479,11 @@ func (p *Pool[T]) acquire(ctx context.Context) (*pooledConn[T], int, error) {
 				return nil, -1, err
 			}
 
+			now := time.Now()
+
 			conn.mu.Lock()
 			conn.inUse = true
-			conn.lastUsedAt = time.Now()
+			conn.lastUsedAt = now
 			conn.mu.Unlock()
 
 			idx, ok := p.addReservedConn(conn)
@@ -490,6 +495,7 @@ func (p *Pool[T]) acquire(ctx context.Context) (*pooledConn[T], int, error) {
 			}
 
 			p.computeMetrics()
+			p.recordAcquisition()
 
 			return conn, idx, nil
 		}
@@ -549,14 +555,24 @@ func (p *Pool[T]) release(conn *pooledConn[T]) {
 		return
 	}
 
+	now := time.Now()
+
 	conn.mu.Lock()
 
-	if !conn.invalid {
+	var busy time.Duration
+
+	if conn.inUse {
+		busy = now.Sub(conn.lastUsedAt)
 		conn.inUse = false
-		conn.lastUsedAt = time.Now()
+	}
+
+	if !conn.invalid {
+		conn.lastUsedAt = now
 	}
 
 	conn.mu.Unlock()
+
+	p.recordBusySeconds(busy)
 
 	p.connsMu.Lock()
 	p.signalLocked()
@@ -569,7 +585,10 @@ func (p *Pool[T]) release(conn *pooledConn[T]) {
 
 // invalidate removes and closes a connection.
 func (p *Pool[T]) invalidate(conn *pooledConn[T]) {
-	var transport thrift.TTransport
+	var (
+		transport thrift.TTransport
+		busy      time.Duration
+	)
 
 	if conn == nil {
 		return
@@ -584,9 +603,16 @@ func (p *Pool[T]) invalidate(conn *pooledConn[T]) {
 		}
 	}
 
+	now := time.Now()
+
 	conn.mu.Lock()
+
+	if conn.inUse {
+		busy = now.Sub(conn.lastUsedAt)
+		conn.inUse = false
+	}
+
 	conn.invalid = true
-	conn.inUse = false
 	transport = conn.transport
 	conn.transport = nil
 	conn.client = *new(T)
@@ -595,6 +621,7 @@ func (p *Pool[T]) invalidate(conn *pooledConn[T]) {
 	p.signalLocked()
 	p.connsMu.Unlock()
 
+	p.recordBusySeconds(busy)
 	p.closeTransport(transport)
 
 	p.computeMetrics()
@@ -846,6 +873,30 @@ func (p *Pool[T]) setMetricsValues(snapshot poolMetricsSnapshot) {
 	}
 	if p.metrics.Idle != nil {
 		p.metrics.Idle.Set(snapshot.total - snapshot.inUse)
+	}
+}
+
+// recordAcquisition counts a successful connection checkout.
+func (p *Pool[T]) recordAcquisition() {
+	p.metricsMu.Lock()
+	defer p.metricsMu.Unlock()
+
+	if p.metrics.Acquisitions != nil {
+		p.metrics.Acquisitions.Inc()
+	}
+}
+
+// recordBusySeconds accumulates the time a connection was checked out.
+func (p *Pool[T]) recordBusySeconds(busy time.Duration) {
+	if busy <= 0 {
+		return
+	}
+
+	p.metricsMu.Lock()
+	defer p.metricsMu.Unlock()
+
+	if p.metrics.BusySeconds != nil {
+		p.metrics.BusySeconds.Add(busy.Seconds())
 	}
 }
 

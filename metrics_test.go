@@ -55,6 +55,37 @@ func TestNewThriftCollectors(t *testing.T) {
 	assert.Contains(t, collectors, metrics.BytesSent)
 }
 
+func TestGetPoolMetrics(t *testing.T) {
+	t.Parallel()
+
+	metrics := thriftobs.GetPoolMetrics()
+
+	assert.NotNil(t, metrics)
+	assert.NotNil(t, metrics.Total)
+	assert.NotNil(t, metrics.InUse)
+	assert.NotNil(t, metrics.Acquisitions)
+	assert.NotNil(t, metrics.BusySeconds)
+	assert.NotNil(t, metrics.Idle)
+	assert.NotNil(t, metrics.Invalid)
+	assert.NotNil(t, metrics.Open)
+}
+
+func TestNewThriftPoolCollectors(t *testing.T) {
+	t.Parallel()
+
+	metrics := thriftobs.GetPoolMetrics()
+	collectors := thriftobs.NewThriftPoolCollectors(metrics)
+
+	assert.Len(t, collectors, 7)
+	assert.Contains(t, collectors, metrics.Total)
+	assert.Contains(t, collectors, metrics.InUse)
+	assert.Contains(t, collectors, metrics.Acquisitions)
+	assert.Contains(t, collectors, metrics.BusySeconds)
+	assert.Contains(t, collectors, metrics.Idle)
+	assert.Contains(t, collectors, metrics.Invalid)
+	assert.Contains(t, collectors, metrics.Open)
+}
+
 func TestMetrics_Requests_LabelValues(t *testing.T) {
 	t.Parallel()
 

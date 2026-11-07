@@ -22,7 +22,7 @@ Prometheus observability wrapper for [Apache Thrift](https://thrift.apache.org/)
 - **Multiple protocols** — `binary` (default), `compact`, `json`, `simplejson`.
 - **Client helper** — instrumented transport factory for Thrift clients.
 - **Simple server lifecycle** — `Service` wraps `TSimpleServer` with `Start`/`Stop`/`IsRunning`.
-- **Client connection pool** — generic `Pool[T]` for Thrift clients: on-demand creation, health checks, idle/lifetime recycling, retries and Prometheus gauges.
+- **Client connection pool** — generic `Pool[T]` for Thrift clients: on-demand creation, health checks, idle/lifetime recycling, retries and Prometheus metrics (gauges and cumulative checkout counters).
 
 ## Installation
 
@@ -214,19 +214,34 @@ Custom clients can be pooled by providing your own `PoolFactory[T]` instead of `
 
 ### Pool Metrics
 
-Pool metrics are optional gauges supplied by the caller:
+Pool metrics are optional and supplied by the caller:
 
 ```go
 pool.SetMetrics(&thriftobs.PoolMetrics{
-  Total:   totalGauge,   // pooled connections
-  InUse:   inUseGauge,   // connections currently checked out
-  Idle:    idleGauge,    // available connections
-  Invalid: invalidGauge, // invalid connections awaiting removal
-  Open:    openGauge,    // connections with an open transport
+  Total:        totalGauge,           // pooled connections
+  InUse:        inUseGauge,           // connections currently checked out
+  Acquisitions: acquisitionsCounter,  // total successful checkouts
+  BusySeconds:  busySecondsCounter,   // cumulative checkout time
+  Idle:         idleGauge,            // available connections
+  Invalid:      invalidGauge,         // invalid connections awaiting removal
+  Open:         openGauge,            // connections with an open transport
 })
 ```
 
-Gauges are refreshed on connection creation, checkout and release, on health checks and on `Close`.
+Gauges are refreshed on connection creation, checkout and release, on health checks and on `Close`. `Acquisitions` is incremented on every successful checkout, and `BusySeconds` accumulates the checkout duration on release or invalidation.
+
+`InUse` and `Idle` are instantaneous samples: because Thrift calls are usually short, a Prometheus scrape often misses the in-use window and reports `0`. Use the cumulative counters to measure actual pool utilization:
+
+```promql
+# Average number of busy connections over 5 minutes
+rate(thrift_pool_busy_seconds_total[5m])
+
+# Pool utilization ratio (0..1)
+clamp_max(rate(thrift_pool_busy_seconds_total[5m]) / thrift_pool_connections, 1)
+
+# Checkout rate
+rate(thrift_pool_acquisitions_total[5m])
+```
 
 ## Metrics Exposed
 
