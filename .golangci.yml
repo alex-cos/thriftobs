@@ -1,10 +1,28 @@
 version: "2"
+
 run:
+  # Timeout for total work, e.g. 30s, 5m, 5m30s.
+  # Default: 0 (disabled)
+  timeout: 0s
+  # The mode used to evaluate relative paths.
+  # Default: cfg
+  relative-path-mode: gomod
+  # Exit code when at least one issue was found.
+  # Default: 1
   issues-exit-code: 1
+  # Include test files or not.
+  # Default: true
   tests: true
+  # Allow multiple parallel golangci-lint instances running.
+  # Default: false
   allow-parallel-runners: true
+
 linters:
+  # Default set of linters.
+  # The value can be: `standard`, `all`, `none`, or `fast`.
+  # Default: standard
   default: standard
+  # Enable specific linter.
   enable:
     - asasalint
     - asciicheck
@@ -15,11 +33,11 @@ linters:
     - contextcheck
     - copyloopvar
     - cyclop
-    - decorder
     - dogsled
     - dupl
     - durationcheck
     - embeddedstructfieldcheck
+    - errcheck
     - errchkjson
     - errname
     - errorlint
@@ -27,29 +45,26 @@ linters:
     - exptostd
     - fatcontext
     - forbidigo
-    - forcetypeassert
     - funlen
     - gocheckcompilerdirectives
     - gochecknoinits
     - gocognit
     - gocritic
-    - gocyclo
     - godot
     - godox
     - goprintffuncname
     - gosec
     - govet
     - iface
-    - importas
+    - inamedparam
+    - ineffassign
     - intrange
     - lll
     - loggercheck
     - makezero
     - mirror
-    - misspell
+    - modernize
     - musttag
-    - nakedret
-    - nestif
     - nilerr
     - nilnesserr
     - nilnil
@@ -74,41 +89,168 @@ linters:
     - unconvert
     - unparam
     - unused
+    - usestdlibvars
     - usetesting
     - wastedassign
     - whitespace
     - zerologlint
+
   # Disable specific linter.
   disable:
+    - arangolint # if arangodb used
+    - decorder
+    - depguard
+    - dupword # useless
+    - err113 # too strict
+    - exhaustruct_v5
+    - funcorder
+    - forcetypeassert # replaced by errcheck
+    - ginkgolinter # if ginkgo/gomega used
+    - gochecknoglobals
+    - gochecksumtype
+    - goconst
+    - gocyclo
+    - godoclint
+    - goheader # not necessary
+    - gomoddirectives
+    - gomodguard_v2
+    - gosmopolitan
+    - grouper
+    - importas
+    - interfacebloat
+    - iotamixing
+    - ireturn
+    - maintidx
+    - misspell
+    - nestif # replaced by gocognit
     - mnd
+    - nakedret # replaced by nonamedreturns
+    - nlreturn # too strict and mostly code is not more readable
+    - noinlineerr
+    - nolintlint
+    - recvcheck
+    - revive
+    - spancheck
+    - tagalign
+    - tagliatelle
+    - testableexamples
+    - unqueryvet
+    - varnamelen # but too many false positives
+    - wrapcheck # too strict
+    - wsl_v5 # too strict and mostly code is not more readable
+
   # All available settings of specific linters.
   settings:
+    bodyclose:
+      # Check that the response body is consumed.
+      # Default: false
+      check-consumption: false
     copyloopvar:
-      check-alias: false
+      # Check all assigning the loop variable to another variable.
+      # Default: false
+      check-alias: true
     cyclop:
+      # The maximal code complexity to report.
+      # Default: 10
       max-complexity: 25
+      # The maximal average package complexity.
+      # Default: 0.0
       package-average: 10
     dogsled:
-      max-blank-identifiers: 2
+      # Checks assignments with too many blank identifiers.
+      # Default: 2
+      max-blank-identifiers: 3
     dupl:
+      # Tokens count to trigger issue.
+      # Default: 150
       threshold: 200
+    embeddedstructfieldcheck:
+      # Checks that there is an empty space between the embedded fields and regular fields.
+      # Default: true
+      empty-line: true
+      # Checks that sync.Mutex and sync.RWMutex are not used as embedded fields.
+      # Default: false
+      forbid-mutex: true
     errcheck:
-      check-type-assertions: false
-      check-blank: false
+      # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+      # Default: false
+      check-type-assertions: true
+      # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`.
+      # Default: false
+      check-blank: true
+      # To disable the errcheck built-in exclude list.
+      # Default: false
       disable-default-exclusions: false
+      # Display function signature instead of selector.
+      # Default: false
+      verbose: true
+    errorlint:
+      # Check whether fmt.Errorf uses the %w verb for formatting errors.
+      # Default: true
+      errorf: true
+      # Permit more than 1 %w verb, valid per Go 1.20 (requires `errorf: true`).
+      # Default: true
+      errorf-multi: true
+      # Check for plain type assertions and type switches.
+      # Default: true
+      asserts: true
+      # Check for plain error comparisons.
+      # Default: true
+      comparison: true
     exhaustive:
+      # Program elements to check for exhaustiveness.
+      check:
+        - switch
+      # Presence of "default" case in switch statements satisfies exhaustiveness,
+      # even if all enum members are not listed.
+      # Default: false
       default-signifies-exhaustive: true
+      # Consider enums only in package scopes, not in inner scopes.
+      # Default: false
+      package-scope-only: true
+      # Switch statement requires default case even if exhaustive.
+      # Default: false
+      default-case-required: false
     fatcontext:
+      # Check for potential fat contexts in struct pointers.
+      # Default: false
       check-struct-pointers: false
+      # Disable detection of fat contexts in loops.
+      # Default: true
+      check-loops: true
+      # Disable detection of fat contexts in function literals.
+      # Default: true
+      check-function-literals: true
     funlen:
+      # Checks the number of lines in a function.
+      # Default: 60
       lines: 120
-      statements: 100
+      # Checks the number of statements in a function.
+      # Default: 40
+      statements: -1
+      # Ignore comments when counting lines.
+      # Default: true
       ignore-comments: true
     gocognit:
-      min-complexity: 30
+      # Minimal code complexity to report.
+      # Default: 30 (but we recommend 10-20)
+      min-complexity: 25
     gocritic:
+      settings:
+        captLocal:
+          # Whether to restrict checker to params only.
+          # Default: true
+          paramsOnly: false
+        underef:
+          # Whether to skip (*x).method() calls where x is a pointer receiver.
+          # Default: true
+          skipRecvDeref: false
+      # Which checks should be disabled; can't be combined with 'enabled-checks'.
+      # Default: []
       disabled-checks:
         - importShadow
+      # Enable multiple checks by tags in addition to default checks.
+      # Default: []
       enabled-tags:
         - diagnostic
         - style
@@ -116,79 +258,214 @@ linters:
         - opinionated
       disabled-tags:
         - experimental
-    gocyclo:
-      min-complexity: 25
+    gosec:
+      excludes:
+        - G306
+      # Filter out the issues with a lower severity than the given value.
+      # Default: low
+      severity: medium
+      # Filter out the issues with a lower confidence than the given value.
+      # Default: low
+      confidence: medium
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
     iface:
+      # List of analyzers.
+      # Default: ["identical"]
       enable:
         - identical
-        - unused
+        - unexported
     lll:
+      # Max line length, lines longer will be reported.
+      # '\t' is counted as 1 character by default, and can be changed with the tab-width option.
+      # Default: 120.
       line-length: 120
+      # Tab width in spaces.
+      # Default: 1
       tab-width: 1
-    nestif:
-      min-complexity: 7
+    loggercheck:
+      # Allow check for the log/slog library.
+      # Default: true
+      slog: true
+      # Require all logging keys to be inlined constant strings.
+      # Default: false
+      require-string-key: false
+      # Require printf-like format specifier (%s, %d for example) not present.
+      # Default: false
+      no-printf-like: false
+    nilnil:
+      # To check functions with only two return values (`return nil, nil`).
+      # Default: true
+      only-two: true
+      # In addition, detect opposite situation (simultaneous return of non-nil error and valid value).
+      # Default: false
+      detect-opposite: false
+      # List of return types to check.
+      # Default: ["chan", "func", "iface", "map", "ptr", "uintptr", "unsafeptr"]
+      checked-types:
+        - chan
+        - func
+        - iface
+        - map
+        - ptr
+        - uintptr
+        - unsafeptr
+    nonamedreturns:
+      # Report named error if it is assigned inside defer.
+      # Default: false
+      report-error-in-defer: true
+      # Allow named returns in the signature but report them if referenced in the body or used by a naked return.
+      # Default: false
+      allow-unused-named-returns: false
     paralleltest:
+      # Ignore missing calls to `t.Parallel()` and only report incorrect uses of it.
+      # Default: false
       ignore-missing: false
+      # Ignore missing calls to `t.Parallel()` in subtests. Top-level tests are
+      # still required to have `t.Parallel`, but subtests are allowed to skip it.
+      # Default: false
       ignore-missing-subtests: true
+      # Check that `defer` is not used with `t.Parallel`.
+      # Default: false
+      check-cleanup: true
+    prealloc:
+      # Report pre-allocation suggestions only on simple loops that have no returns/breaks/continues/gotos in them.
+      # Default: true
+      simple: true
+      # Report pre-allocation suggestions on range loops.
+      # Default: true
+      range-loops: true
+      # Report pre-allocation suggestions on for loops.
+      # Default: false
+      for-loops: false
+    promlinter:
+      # Promlinter cannot infer all metrics name in static analysis.
+      # Default: false
+      strict: true
+    protogetter:
+      # Skip any generated files from the checking.
+      # Default: false
+      skip-any-generated: true
+      # Skip first argument of append function.
+      # Default: false
+      replace-first-arg-in-append: false
+    staticcheck:
+      checks:
+        [
+          "all",
+          "-ST1000",
+          "-ST1003",
+          "-ST1016",
+          "-ST1020",
+          "-ST1021",
+          "-ST1022",
+          "-QF1002",
+          "-QF1012",
+        ]
     testifylint:
       enable-all: true
+      # Disable checkers by name
       disable:
         - require-error
         - float-compare
     testpackage:
       skip-regexp: .*(export|internal)_test\.go
       allow-packages:
+        - example
         - main
     usetesting:
-      context-background: true
-      context-todo: true
+      # Enable/disable `os.CreateTemp("", ...)` detections.
+      # Default: true
+      os-create-temp: true
+      # Enable/disable `os.MkdirTemp()` detections.
+      # Default: true
+      os-mkdir-temp: true
+      # Enable/disable `os.Setenv()` detections.
+      # Default: true
+      os-setenv: true
+      # Enable/disable `os.TempDir()` detections.
+      # Default: false
       os-temp-dir: true
+      # Enable/disable `os.Chdir()` detections.
+      # Default: true
+      os-chdir: true
+      # Enable/disable `context.Background()` detections.
+      # Default: false
+      context-background: true
+      # Enable/disable `context.TODO()` detections.
+      # Default: false
+      context-todo: true
+
   # Defines a set of rules to ignore issues.
   exclusions:
+    # Mode of the generated files analysis.
+    # Default: strict
     generated: lax
+    # Predefined exclusion rules.
+    # Default: []
     presets:
-      - comments
       - common-false-positives
-      - legacy
       - std-error-handling
     # Excluding configuration per-path, per-linter, per-text and per-source.
     rules:
-      - linters:
+      - path: (.+)_test\.go$
+        linters:
+          - bodyclose
           - cyclop
           - dogsled
           - dupl
           - errcheck
           - forbidigo
-          - forcetypeassert
           - funlen
-          - gochecknoglobals
           - gocognit
-          - goconst
           - gosec
-          - mnd
+          - lll
           - noctx
           - perfsprint
           - prealloc
-        path: (.+)_test\.go$
-      - linters:
-          - gochecknoglobals
-        path: main\.go$
+      - path: (.*)mock\.go$
+        linters:
+          - dupl
+          - errcheck
+          - gocognit
+          - gosec
+          - prealloc
       - linters:
           - gocritic
         text: "unnecessaryDefer:"
-      - path: (.+)\.go$
-        text: G306
+      - linters:
+          - lll
+        source: "^//go:generate "
+    # Which file paths to exclude: they will be analyzed, but issues from them won't be reported.
+    # Default: []
     paths:
       - vendor
       - tmp
+    warn-unused: true
+
 issues:
+  # Maximum issues count per one linter.
+  # Set to 0 to disable.
+  # Default: 50
   max-issues-per-linter: 500
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
   max-same-issues: 0
+  # Make issues output unique by line.
+  # Default: true
   uniq-by-line: true
+
 severity:
+  # Set the default severity for issues.
   default: error
   rules:
-    - linters:
+    - severity: error
+      linters:
+        - clickhouselint
         - containedctx
         - contextcheck
         - copyloopvar
@@ -196,15 +473,15 @@ severity:
         - forbidigo
         - gocritic
         - gosec
-        - importas
+        - govet
         - mirror
-        - nakedret
         - noctx
         - rowserrcheck
         - sqlclosecheck
         - zerologlint
-      severity: error
-    - linters:
+
+    - severity: warning
+      linters:
         - bidichk
         - bodyclose
         - errcheck
@@ -213,39 +490,39 @@ severity:
         - funlen
         - gocheckcompilerdirectives
         - gocognit
-        - gocyclo
         - ineffassign
-        - nestif
+        - nosprintfhostport
         - paralleltest
         - reassign
         - sloglint
         - tparallel
-      severity: warning
-    - linters:
+        - unused
+        - usetesting
+
+    - severity: info
+      linters:
         - asasalint
         - asciicheck
         - canonicalheader
         - dogsled
         - dupl
         - durationcheck
+        - embeddedstructfieldcheck
         - errname
         - errorlint
         - exhaustive
         - exptostd
-        - forbidigo
-        - forcetypeassert
         - gochecknoinits
-        - goconst
         - godot
         - godox
         - goprintffuncname
         - iface
-        - ifshort
+        - inamedparam
         - intrange
         - lll
         - loggercheck
         - makezero
-        - misspell
+        - modernize
         - musttag
         - nilerr
         - nilnesserr
@@ -254,6 +531,7 @@ severity:
         - perfsprint
         - prealloc
         - predeclared
+        - promlinter
         - protogetter
         - staticcheck
         - testifylint
@@ -263,8 +541,6 @@ severity:
         - unparam
         - wastedassign
         - whitespace
-        - wrapcheck
-      severity: info
 
 formatters:
   enable: []

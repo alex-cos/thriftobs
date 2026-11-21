@@ -508,7 +508,7 @@ func TestPool_Do_PanickingFactoryReleasesReservation(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
-	defer cancel()
+	t.Cleanup(cancel)
 
 	err := pool.Do(ctx, func(poolTestClient) error {
 		return nil
@@ -605,11 +605,7 @@ func TestPool_Do_CapacityInvariant(t *testing.T) {
 	errCh := make(chan error, workers)
 
 	for range workers {
-		wg.Add(1)
-
-		go func() {
-			defer wg.Done()
-
+		wg.Go(func() {
 			for range ops {
 				err := pool.Do(ctx, func(poolTestClient) error {
 					time.Sleep(time.Millisecond)
@@ -622,7 +618,7 @@ func TestPool_Do_CapacityInvariant(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 
 	wg.Wait()
